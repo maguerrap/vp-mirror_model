@@ -321,3 +321,463 @@ def plot_results_BoT(
     axs[3].set_yscale("log")
     axs[3].set_xlabel("Iteration")
     axs[3].set_title("Convergence of Objective")
+
+
+# Functional interface for hermite splines (recommended for use in JIT)
+def cubic_hermite_spline_eval(xi, x_knots, y_knots, dydx_knots):
+    """
+    Evaluate cubic Hermite spline (fully JIT-compatible).
+    
+    Parameters:
+    -----------
+    xi : array
+        Evaluation points
+    x_knots : array
+        Knot x-coordinates (must be sorted)
+    y_knots : array
+        Function values at knots
+    dydx_knots : array
+        Derivative values at knots
+    derivative_order : int
+        0 for function, 1 for first derivative, 2 for second derivative
+    
+    Returns:
+    --------
+    yi : array
+        Evaluated values
+    """
+    #xi = jnp.atleast_1d(xi)
+    n = len(x_knots)
+    
+    # Find segments
+    i = jnp.searchsorted(x_knots, xi, side='right') - 1
+    i = jnp.clip(i, 0, n - 2)
+    
+    # Get segment data
+    x0 = x_knots[i]
+    x1 = x_knots[i + 1]
+    y0 = y_knots[i]
+    y1 = y_knots[i + 1]
+    m0 = dydx_knots[i]
+    m1 = dydx_knots[i + 1]
+    
+    # Normalized position
+    dx = x1 - x0
+    t = (xi - x0) / dx
+    
+    # Hermite basis functions
+    h00 = (1 + 2*t) * (1 - t)**2
+    h10 = t * (1 - t)**2
+    h01 = t**2 * (3 - 2*t)
+    h11 = t**2 * (t - 1)
+    
+    yi = h00 * y0 + h10 * dx * m0 + h01 * y1 + h11 * dx * m1
+    
+    return yi
+
+def cubic_hermite_spline_eval_1(xi, x_knots, y_knots, dydx_knots):
+    """
+    Evaluate first derivative of cubic Hermite spline (fully JIT-compatible).
+    
+    Parameters:
+    -----------
+    xi : array
+        Evaluation points
+    x_knots : array
+        Knot x-coordinates (must be sorted)
+    y_knots : array
+        Function values at knots
+    dydx_knots : array
+        Derivative values at knots
+    derivative_order : int
+        0 for function, 1 for first derivative, 2 for second derivative
+    
+    Returns:
+    --------
+    yi : array
+        Evaluated values
+    """
+    #xi = jnp.atleast_1d(xi)
+    n = len(x_knots)
+    
+    # Find segments
+    i = jnp.searchsorted(x_knots, xi, side='right') - 1
+    i = jnp.clip(i, 0, n - 2)
+    
+    # Get segment data
+    x0 = x_knots[i]
+    x1 = x_knots[i + 1]
+    y0 = y_knots[i]
+    y1 = y_knots[i + 1]
+    m0 = dydx_knots[i]
+    m1 = dydx_knots[i + 1]
+    
+    # Normalized position
+    dx = x1 - x0
+    t = (xi - x0) / dx
+    
+    # Hermite basis functions
+    # First derivatives
+    dh00_dt = 6*t**2 - 6*t
+    dh10_dt = 3*t**2 - 4*t + 1
+    dh01_dt = -6*t**2 + 6*t
+    dh11_dt = 3*t**2 - 2*t
+        
+    yi = (dh00_dt * y0 + dh10_dt * dx * m0 + 
+          dh01_dt * y1 + dh11_dt * dx * m1) / dx
+    
+    return yi
+
+def cubic_hermite_spline_eval_2(xi, x_knots, y_knots, dydx_knots):
+    """
+    Evaluate second derivative of cubic Hermite spline (fully JIT-compatible).
+    
+    Parameters:
+    -----------
+    xi : array
+        Evaluation points
+    x_knots : array
+        Knot x-coordinates (must be sorted)
+    y_knots : array
+        Function values at knots
+    dydx_knots : array
+        Derivative values at knots
+    derivative_order : int
+        0 for function, 1 for first derivative, 2 for second derivative
+    
+    Returns:
+    --------
+    yi : array
+        Evaluated values
+    """
+    #xi = jnp.atleast_1d(xi)
+    n = len(x_knots)
+    
+    # Find segments
+    i = jnp.searchsorted(x_knots, xi, side='right') - 1
+    i = jnp.clip(i, 0, n - 2)
+    
+    # Get segment data
+    x0 = x_knots[i]
+    x1 = x_knots[i + 1]
+    y0 = y_knots[i]
+    y1 = y_knots[i + 1]
+    m0 = dydx_knots[i]
+    m1 = dydx_knots[i + 1]
+    
+    # Normalized position
+    dx = x1 - x0
+    t = (xi - x0) / dx
+    
+    # Hermite basis functions
+    # Second derivatives
+    d2h00_dt2 = 12*t - 6
+    d2h10_dt2 = 6*t - 4
+    d2h01_dt2 = -12*t + 6
+    d2h11_dt2 = 6*t - 2
+        
+    yi = (d2h00_dt2 * y0 + d2h10_dt2 * dx * m0 + 
+            d2h01_dt2 * y1 + d2h11_dt2 * dx * m1) / dx**2
+    
+    return yi
+
+
+
+def build_B(B_min, B_max, z_min, z_max, z_b,
+            B_b, z_0):
+    """
+    Build magnetic field B(z) and its partial derivative with respect to parameters
+    using cubic Hermite splines with zero derivatives at critical points.
+    """
+    
+    def B_1(params, z):
+        """
+        Build magnetic field B(z) from parameters
+        when z_0 == z_min.
+        """
+        n_params = params.shape[0]
+        
+        # Generate interior z locations (between z_0 and z_max, excluding z_max)
+        z_interior = jnp.linspace(z_0, z_max, num=n_params, endpoint=False)
+        
+        # Build z array with all knots (may contain duplicates)
+        z_sorted = jnp.concatenate([
+            z_interior,
+            jnp.array([z_max, z_b])
+        ])
+        
+        # Build corresponding B array
+        B_sorted = jnp.concatenate([
+            params,
+            jnp.array([B_max, B_b])
+        ])
+
+        # Find indices of critical points in final array
+        idx_min = jnp.argmin(jnp.abs(z_sorted - z_min))
+        idx_max = jnp.argmin(jnp.abs(z_sorted - z_max))
+
+        # Initialize derivative array
+        n = len(B_sorted)
+        indices = jnp.arange(n)
+        
+        # Compute all possible derivatives
+        dz_forward = z_sorted[1:] - z_sorted[:-1]
+        dB_forward = B_sorted[1:] - B_sorted[:-1]
+        
+        # Central differences
+        dB_central = jnp.zeros(n)
+        dB_central = dB_central.at[1:-1].set(
+            (B_sorted[2:] - B_sorted[:-2]) / (z_sorted[2:] - z_sorted[:-2])
+        )
+        
+        # Forward difference for first point
+        dB_first = dB_forward[0] / dz_forward[0]
+        
+        # Backward difference for last point
+        dB_last = dB_forward[-1] / dz_forward[-1]
+        
+        # Assemble derivatives
+        dB_knots = jnp.where(
+            indices == 0,
+            dB_first,
+            jnp.where(
+                indices == n - 1,
+                dB_last,
+                dB_central
+            )
+        )
+        
+        # Enforce zero derivatives at critical points and neighbors
+        is_critical = (indices == idx_min) | (indices == idx_max)
+        is_before_min = (indices == idx_min - 1) & (idx_min > 0)
+        is_after_max = (indices == idx_max + 1) & (idx_max < n - 1)
+        
+        dB_knots = jnp.where(is_critical | is_before_min | is_after_max, 0.0, dB_knots)
+
+        z_eval = jnp.clip(jnp.abs(z), 0, z_b)
+        return cubic_hermite_spline_eval(z_eval, z_sorted, B_sorted, dB_knots)
+    
+    def partial_B_1(params, z):
+        """
+        Build partial derivative of B(z) with respect to z
+        when z_0 == z_min.
+        """
+        n_params = params.shape[0]
+        
+        # Generate interior z locations (between z_0 and z_max, excluding z_max)
+        z_interior= jnp.linspace(z_0, z_max, num=n_params, endpoint=False)
+        
+        # Build z array with all knots (may contain duplicates)
+        z_sorted = jnp.concatenate([
+            z_interior,
+            jnp.array([z_max, z_b])
+        ])
+        
+        # Build corresponding B array
+        B_sorted = jnp.concatenate([
+            params,
+            jnp.array([B_max, B_b])
+        ])
+
+        # Find indices of critical points in final array
+        idx_min = jnp.argmin(jnp.abs(z_sorted - z_min))
+        idx_max = jnp.argmin(jnp.abs(z_sorted - z_max))
+
+        # Initialize derivative array
+        n = len(B_sorted)
+        indices = jnp.arange(n)
+        
+        # Compute all possible derivatives
+        dz_forward = z_sorted[1:] - z_sorted[:-1]
+        dB_forward = B_sorted[1:] - B_sorted[:-1]
+        
+        # Central differences
+        dB_central = jnp.zeros(n)
+        dB_central = dB_central.at[1:-1].set(
+            (B_sorted[2:] - B_sorted[:-2]) / (z_sorted[2:] - z_sorted[:-2])
+        )
+        
+        # Forward difference for first point
+        dB_first = dB_forward[0] / dz_forward[0]
+        
+        # Backward difference for last point
+        dB_last = dB_forward[-1] / dz_forward[-1]
+        
+        # Assemble derivatives
+        dB_knots = jnp.where(
+            indices == 0,
+            dB_first,
+            jnp.where(
+                indices == n - 1,
+                dB_last,
+                dB_central
+            )
+        )
+        
+        # Enforce zero derivatives at critical points and neighbors
+        is_critical = (indices == idx_min) | (indices == idx_max)
+        is_before_min = (indices == idx_min - 1) & (idx_min > 0)
+        is_after_max = (indices == idx_max + 1) & (idx_max < n - 1)
+        
+        dB_knots = jnp.where(is_critical | is_before_min | is_after_max, 0.0, dB_knots)
+
+        sign = jnp.sign(z)
+        sign = jnp.where(z == 0, 0, sign)
+        z_eval = jnp.clip(jnp.abs(z), 0, z_b)
+        return sign * cubic_hermite_spline_eval_1(z_eval, z_sorted, B_sorted, dB_knots)
+
+    def B_2(params, z):
+        """
+        Build magnetic field B(z) from parameters
+        when z_0 != z_min.
+        """
+        n_params = params.shape[0]
+        
+        # Generate interior z locations (between z_0 and z_max, excluding z_max)
+        z_interior = jnp.linspace(z_0, z_max, num=n_params, endpoint=False)
+        
+        # Build z array with all knots (may contain duplicates)
+        z_unsorted = jnp.concatenate([
+            jnp.array([z_min]),
+            z_interior,
+            jnp.array([z_max, z_b])
+        ])
+        
+        # Build corresponding B array
+        B_unsorted = jnp.concatenate([
+            jnp.array([B_min]),
+            params,
+            jnp.array([B_max, B_b])
+        ])
+        
+        # Sort both arrays by z values
+        sort_indices = jnp.argsort(z_unsorted)
+        z_sorted = z_unsorted[sort_indices]
+        B_sorted = B_unsorted[sort_indices]
+
+        # Find indices of critical points in final array
+        idx_min = jnp.argmin(jnp.abs(z_sorted - z_min))
+        idx_max = jnp.argmin(jnp.abs(z_sorted - z_max))
+
+        # Initialize derivative array
+        n = len(B_sorted)
+        indices = jnp.arange(n)
+        
+        # Compute all possible derivatives
+        dz_forward = z_sorted[1:] - z_sorted[:-1]
+        dB_forward = B_sorted[1:] - B_sorted[:-1]
+        
+        # Central differences
+        dB_central = jnp.zeros(n)
+        dB_central = dB_central.at[1:-1].set(
+            (B_sorted[2:] - B_sorted[:-2]) / (z_sorted[2:] - z_sorted[:-2])
+        )
+        
+        # Forward difference for first point
+        dB_first = dB_forward[0] / dz_forward[0]
+        
+        # Backward difference for last point
+        dB_last = dB_forward[-1] / dz_forward[-1]
+        
+        # Assemble derivatives
+        dB_knots = jnp.where(
+            indices == 0,
+            dB_first,
+            jnp.where(
+                indices == n - 1,
+                dB_last,
+                dB_central
+            )
+        )
+        
+        # Enforce zero derivatives at critical points and neighbors
+        is_critical = (indices == idx_min) | (indices == idx_max)
+        is_before_min = (indices == idx_min - 1) & (idx_min > 0)
+        is_after_max = (indices == idx_max + 1) & (idx_max < n - 1)
+        
+        dB_knots = jnp.where(is_critical | is_before_min | is_after_max, 0.0, dB_knots)
+
+        z_eval = jnp.clip(jnp.abs(z), 0, z_b)
+        return cubic_hermite_spline_eval(z_eval, z_sorted, B_sorted, dB_knots)
+    
+    def partial_B_2(params, z):
+        """
+        Build partial derivative of B(z) with respect to z
+        when z_0 != z_min.
+        """
+        n_params = params.shape[0]
+        
+        # Generate interior z locations (between z_0 and z_max, excluding z_max)
+        z_interior = jnp.linspace(z_0, z_max, num=n_params, endpoint=False)
+        
+        # Build z array with all knots (may contain duplicates)
+        z_unsorted = jnp.concatenate([
+            jnp.array([z_min]),
+            z_interior,
+            jnp.array([z_max, z_b])
+        ])
+        
+        # Build corresponding B array
+        B_unsorted = jnp.concatenate([
+            jnp.array([B_min]),
+            params,
+            jnp.array([B_max, B_b])
+        ])
+        
+        # Sort both arrays by z values
+        sort_indices = jnp.argsort(z_unsorted)
+        z_sorted = z_unsorted[sort_indices]
+        B_sorted = B_unsorted[sort_indices]
+
+        # Find indices of critical points in final array
+        idx_min = jnp.argmin(jnp.abs(z_sorted - z_min))
+        idx_max = jnp.argmin(jnp.abs(z_sorted - z_max))
+
+        # Initialize derivative array
+        n = len(B_sorted)
+        indices = jnp.arange(n)
+        
+        # Compute all possible derivatives
+        dz_forward = z_sorted[1:] - z_sorted[:-1]
+        dB_forward = B_sorted[1:] - B_sorted[:-1]
+        
+        # Central differences
+        dB_central = jnp.zeros(n)
+        dB_central = dB_central.at[1:-1].set(
+            (B_sorted[2:] - B_sorted[:-2]) / (z_sorted[2:] - z_sorted[:-2])
+        )
+        
+        # Forward difference for first point
+        dB_first = dB_forward[0] / dz_forward[0]
+        
+        # Backward difference for last point
+        dB_last = dB_forward[-1] / dz_forward[-1]
+        
+        # Assemble derivatives
+        dB_knots = jnp.where(
+            indices == 0,
+            dB_first,
+            jnp.where(
+                indices == n - 1,
+                dB_last,
+                dB_central
+            )
+        )
+        
+        # Enforce zero derivatives at critical points and neighbors
+        is_critical = (indices == idx_min) | (indices == idx_max)
+        is_before_min = (indices == idx_min - 1) & (idx_min > 0)
+        is_after_max = (indices == idx_max + 1) & (idx_max < n - 1)
+        
+        dB_knots = jnp.where(is_critical | is_before_min | is_after_max, 0.0, dB_knots)
+
+        sign = jnp.sign(z)
+        sign = jnp.where(z == 0, 0, sign)
+        z_eval = jnp.clip(jnp.abs(z), 0, z_b)
+        return sign * cubic_hermite_spline_eval_1(z_eval, z_sorted, B_sorted, dB_knots)
+
+
+    if z_0 == z_min:
+        return B_1, partial_B_1
+    else:
+        return B_2, partial_B_2
