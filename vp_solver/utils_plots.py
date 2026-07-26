@@ -7,6 +7,16 @@ from .jax_mirror_solver import Mesh
 from .jax_mirror_solver_full import MeshFull
 from .utils_mirror import cost_rho
 
+matplotlib.rcParams.update({
+    'font.size': 16,  # General font size
+    'axes.labelsize': 16,  # Axis label size
+    'axes.titlesize': 26,  # Title size
+    'xtick.labelsize': 18,  # X-tick label size
+    'ytick.labelsize': 18,  # Y-tick label size
+    'legend.fontsize': 16   # Legend font size
+})
+
+
 Array = jax.Array
 
 vcost_rho = jax.vmap(cost_rho, in_axes=(0,None), out_axes=0)
@@ -69,12 +79,12 @@ def plot_initial_distribution_single(f_iv: Array, mesh: Mesh) -> None:
     plt.show()
 
 
-def plot_final_distribution_single_E_effect(f_array: Array,
-                                            f_array_no_E: Array,
+def plot_final_distribution_single(f_array_1: Array,
+                                            f_array_2: Array,
                                             mesh: Mesh) -> None:
     fig, axs = plt.subplots(2,3 ,figsize=(28, 15))
 
-    im = axs[0,0].imshow(f_array_no_E[:,:,0].T, origin="lower",
+    im = axs[0,0].imshow(f_array_1[:,:,0].T, origin="lower",
                         extent=[mesh.zs[0], mesh.zs[-1],
                                 mesh.vs[0], mesh.vs[-1]],
                         aspect='auto', cmap='plasma')
@@ -83,7 +93,7 @@ def plot_final_distribution_single_E_effect(f_array: Array,
     axs[0,0].set_title("$f_e(T,z,v,0)$")
     fig.colorbar(im, ax=axs[0,0], fraction=0.046, pad=0.04)
 
-    im = axs[0,1].imshow(f_array_no_E[:,:,int(mesh.nmu/16)].T, origin="lower",
+    im = axs[0,1].imshow(f_array_1[:,:,int(mesh.nmu/16)].T, origin="lower",
                         extent=[mesh.zs[0], mesh.zs[-1],
                                 mesh.vs[0], mesh.vs[-1]],
                         aspect='auto', cmap='plasma')
@@ -92,7 +102,7 @@ def plot_final_distribution_single_E_effect(f_array: Array,
     axs[0,1].set_title("$f_e(T,z,v,{:.3f})$".format(mesh.mus[int(mesh.nmu/16)]))
     fig.colorbar(im, ax=axs[0,1], fraction=0.046, pad=0.04)
 
-    im = axs[0,2].imshow(f_array_no_E[:,:,-1].T, origin="lower",
+    im = axs[0,2].imshow(f_array_1[:,:,-1].T, origin="lower",
                         extent=[mesh.zs[0], mesh.zs[-1],
                                 mesh.vs[0], mesh.vs[-1]],
                         aspect='auto', cmap='plasma')
@@ -101,7 +111,7 @@ def plot_final_distribution_single_E_effect(f_array: Array,
     axs[0,2].set_title("$f_e(T,z,v,{:.3f})$".format(mesh.mus[-1]))
     fig.colorbar(im, ax=axs[0,2], fraction=0.046, pad=0.04)
 
-    im = axs[1,0].imshow(f_array[:,:,0].T, origin="lower",
+    im = axs[1,0].imshow(f_array_2[:,:,0].T, origin="lower",
                         extent=[mesh.zs[0], mesh.zs[-1],
                                 mesh.vs[0], mesh.vs[-1]],
                         aspect='auto', cmap='plasma')
@@ -110,7 +120,7 @@ def plot_final_distribution_single_E_effect(f_array: Array,
     #axs[1,0].set_title("$f_e(T,z,v,0)$")
     fig.colorbar(im, ax=axs[1,0], fraction=0.046, pad=0.04)
 
-    im = axs[1,1].imshow(f_array[:,:,int(mesh.nmu/16)].T, origin="lower",
+    im = axs[1,1].imshow(f_array_2[:,:,int(mesh.nmu/16)].T, origin="lower",
                         extent=[mesh.zs[0], mesh.zs[-1],
                                 mesh.vs[0], mesh.vs[-1]],
                         aspect='auto', cmap='plasma')
@@ -119,7 +129,7 @@ def plot_final_distribution_single_E_effect(f_array: Array,
     #axs[1,1].set_title("$f_e(T,z,v,{:.3f})$".format(mesh.mus[int(mesh.nmu/2)]))
     fig.colorbar(im, ax=axs[1,1], fraction=0.046, pad=0.04)
 
-    im = axs[1,2].imshow(f_array[:,:,-1].T, origin="lower",
+    im = axs[1,2].imshow(f_array_2[:,:,-1].T, origin="lower",
                         extent=[mesh.zs[0], mesh.zs[-1],
                                 mesh.vs[0], mesh.vs[-1]],
                         aspect='auto', cmap='plasma')
@@ -175,7 +185,7 @@ def plot_energies_single(t_values: jnp.ndarray, ee_array: jnp.ndarray,
     plt.show()
 
 
-def plot_rhos_single(rho_array: Array, rho_array_no_E: Array,
+def plot_E_effect_rhos_single(rho_array: Array, rho_array_no_E: Array,
                      B_eval: Array, t_values: Array, mesh: Mesh) -> None:
     fig, axs = plt.subplots(1,2 ,figsize=(22, 7))
 
@@ -227,7 +237,41 @@ def plot_rhos_single(rho_array: Array, rho_array_no_E: Array,
     plt.show()
     
 
-def plot_int_rho_single(rho_array: Array, rho_array_no_E:Array,
+def plot_rhos_single(rho_array: Array, B_eval: Array,
+                      t_values: Array, mesh: Mesh) -> None:
+    fig, axs = plt.subplots(1,2 ,figsize=(22, 7))
+
+    cmap = plt.get_cmap("tab10")
+
+    axs[0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_array[0,:], color=cmap(0),
+                label='$\\rho({:.2f},z)$'.format(t_values[0]))
+    axs[0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_array[10,:], color=cmap(1),
+                label='$\\rho({:.2f},z)$'.format(t_values[10]))
+    axs[0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_array[100,:], color=cmap(2),
+                label='$\\rho({:.2f},z)$'.format(t_values[100]))
+    axs[0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_array[-1,:], color=cmap(3),
+                label='$\\rho({:.2f},z)$'.format(t_values[-1]))
+    axs[0].set_title("$\\rho_e(t,z)$")
+    axs[0].set_xlabel("$z$", fontsize=20)
+    axs[0].legend()
+
+
+    axs[1].plot(mesh.zs, rho_array[0,:], color=cmap(0),
+                label='$\\rho({:.2f},z)$'.format(t_values[0]))
+    axs[1].plot(mesh.zs, rho_array[10,:], color=cmap(1),
+                label='$\\rho({:.2f},z)$'.format(t_values[10]))
+    axs[1].plot(mesh.zs, rho_array[100,:], color=cmap(2),
+                label='$\\rho({:.2f},z)$'.format(t_values[100]))
+    axs[1].plot(mesh.zs, rho_array[-1,:], color=cmap(3),
+                label='$\\rho({:.2f},z)$'.format(t_values[-1]))
+    axs[1].set_title("$\\rho_e^{1D}(t,z)$")
+    axs[1].set_xlabel("$z$", fontsize=20)
+    axs[1].legend()
+
+    plt.show()
+
+
+def plot_E_effect_int_rho_single(rho_array: Array, rho_array_no_E:Array,
                         t_values:Array, LZ:float, LV: float,
                         prop_trapped: float, mesh: Mesh) -> None:
     fig, ax = plt.subplots(1,1 ,figsize=(9, 7))
@@ -244,6 +288,81 @@ def plot_int_rho_single(rho_array: Array, rho_array_no_E:Array,
 
     plt.show()
 
+
+def plot_int_rho_single(rho_array_initial: Array, rho_array_optimized:Array,
+                        t_values:Array, LZ:float, LV: float,
+                        prop_trapped: float, mesh: Mesh) -> None:
+    fig, ax = plt.subplots(1,1 ,figsize=(9, 7))
+
+    ax.plot(t_values, vcost_rho(rho_array_initial, mesh.zs), label='Initial $|\\mathbf{B}|$')
+    ax.plot(t_values, vcost_rho(rho_array_optimized, mesh.zs), label='Optimized $|\\mathbf{B}|$')
+    ax.set_title("$\\int \\rho_e^{1D}(t,z)\\mathrm{d}z$")
+    ax.set_xlabel("$t$", fontsize=20)
+    ax.hlines(y=prop_trapped, xmin=0, xmax=t_values[-1], colors='k',
+              linestyles='--', label='Trapped fraction')
+    ax.vlines(x=LZ/LV, ymin=0.94, ymax=1.0, colors='r', linestyles='--', 
+              label='Minimum time before leak')
+    ax.legend()
+
+    plt.show()
+
+
+def plot_summray_opt_single(B_eval_init: Array, B_eval_opt: Array, 
+                            t_values: Array, rho_array_init: Array,
+                            rho_array_opt: Array, E_array_init: Array,
+                            E_array_opt: Array, mesh: Mesh, LZ: float, 
+                            LV: float) -> None:
+    fig, axs = plt.subplots(2,2 ,figsize=(22, 17))
+    line = matplotlib.lines.Line2D([0], [0], color='k', linestyle='--',  
+                                   label='$\\theta_0$')
+
+    cmap = plt.get_cmap("tab10")
+
+    axs[0,0].plot(mesh.zs, B_eval_opt, color=cmap(0), label='$\\theta^{\\ast}$')
+    axs[0,0].plot(mesh.zs, B_eval_init, color=cmap(0), linestyle='--', label='$\\theta_0$')
+    axs[0,0].set_xlabel('$z$', fontsize=20)
+    axs[0,0].set_title('$|\\mathbf{B}(z;\\theta)|$')
+    axs[0,0].legend()
+
+
+    axs[0,1].plot(t_values, vcost_rho(rho_array_opt, mesh.zs), label='$\\theta^{\\ast}$', color=cmap(0))
+    axs[0,1].plot(t_values, vcost_rho(rho_array_init, mesh.zs), label='$\\theta_0$', color=cmap(0), linestyle='--')
+    axs[0,1].vlines(x=LZ/LV, ymin=jnp.min(vcost_rho(rho_array_init, mesh.zs)),
+                    ymax=1.0, colors='r', linestyles='--', label='Minimum time before leak')
+    axs[0,1].set_xlabel('$t$', fontsize=20)
+    axs[0,1].set_title("$\\int \\rho_e^{1D}(t,z;\\theta)dz$")
+    axs[0,1].legend()
+
+
+    axs[1,0].plot(mesh.zs, E_array_opt[10,:], label='$E({:.1f},z)$'.format(t_values[10]))
+    axs[1,0].plot(mesh.zs, E_array_init[10,:], color=cmap(0), linestyle='--')
+    axs[1,0].plot(mesh.zs, E_array_opt[40,:], label='$E({:.1f},z)$'.format(t_values[40]))
+    axs[1,0].plot(mesh.zs, E_array_init[40,:], color=cmap(1), linestyle='--')
+    axs[1,0].plot(mesh.zs, E_array_opt[70,:], label='$E({:.1f},z)$'.format(t_values[70]))
+    axs[1,0].plot(mesh.zs, E_array_init[70,:], color=cmap(2), linestyle='--')
+    axs[1,0].plot(mesh.zs, E_array_opt[150,:], label='$E({:.1f},z)$'.format(t_values[150]))
+    axs[1,0].plot(mesh.zs, E_array_init[150,:], color=cmap(3), linestyle='--')
+    axs[1,0].set_title("$E(t,z)$ for $\\theta_0$ and $\\theta^{\\ast}$")
+    axs[1,0].set_xlabel("$z$", fontsize=20)
+    handles, labels = axs[1,0].get_legend_handles_labels()
+    handles.append(line)
+    axs[1,0].legend(handles=handles)
+
+    axs[1,1].plot(mesh.zs, rho_array_opt[0,:], color=cmap(0), label='$\\rho_e({:.2f},z)$'.format(t_values[0]))
+    axs[1,1].plot(mesh.zs, rho_array_init[0,:], color=cmap(0), linestyle='--')
+    axs[1,1].plot(mesh.zs, rho_array_opt[50,:], color=cmap(1), label='$\\rho_e({:.2f},z)$'.format(t_values[50]))
+    axs[1,1].plot(mesh.zs, rho_array_init[50,:], color=cmap(1), linestyle='--')
+    axs[1,1].plot(mesh.zs, rho_array_opt[100,:], color=cmap(2), label='$\\rho_e({:.2f},z)$'.format(t_values[100]))
+    axs[1,1].plot(mesh.zs, rho_array_init[100,:], color=cmap(2), linestyle='--')
+    axs[1,1].plot(mesh.zs, rho_array_opt[-1,:], color=cmap(3), label='$\\rho_e({:.2f},z)$'.format(t_values[-1]))
+    axs[1,1].plot(mesh.zs, rho_array_init[-1,:], color=cmap(3), linestyle='--')
+    axs[1,1].set_title("$\\rho_e^{1D}(t,z;\\theta_0)$ and $\\rho_e^{1D}(t,z;\\theta^{\\ast})$")
+    axs[1,1].set_xlabel("$z$", fontsize=20)
+    handles, labels = axs[1,1].get_legend_handles_labels()
+    handles.append(line)
+    axs[1,1].legend(handles=handles)
+
+    plt.show()
 
 #################### Multi species plotting #######################
 
