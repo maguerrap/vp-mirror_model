@@ -53,3 +53,4 @@ def load_b_trained(seed: int, zs: jnp.ndarray, load_path: str=None):
 def cost_rho(rho_final: jnp.ndarray, zs: jnp.ndarray) -> jax.Array:
     """Computes the cost function."""
     return jnp.trapezoid(rho_final, zs)
+
