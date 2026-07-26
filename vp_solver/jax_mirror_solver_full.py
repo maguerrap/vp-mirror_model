@@ -10,8 +10,9 @@ Array = jax.Array
 import numpy as np
 
 
-@dataclasses.dataclass
-class MeshFull:
+import equinox as eqx
+
+class MeshFull(eqx.Module):
     """Mesh object updated to include cell edges for conservative finite volume advection."""
     zs: Array
     z_edges: Array
@@ -72,8 +73,7 @@ def make_mesh_full(length_z: float, length_v_e: float, length_v_i: float, length
     )
 
 
-@dataclasses.dataclass(frozen=True)
-class VlasovPoissonSolverFull:
+class VlasovPoissonSolverFull(eqx.Module):
     """
     Vlasov–Poisson Conservative semi-Lagrangian solver with operator splitting.
     """

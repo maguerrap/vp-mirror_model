@@ -8,8 +8,9 @@ import interpax
 Array = jax.Array
 
 
-@dataclasses.dataclass
-class Mesh:
+import equinox as eqx
+
+class Mesh(eqx.Module):
     """Mesh object updated to include cell edges for conservative finite volume advection."""
     zs: Array
     z_edges: Array
@@ -59,8 +60,7 @@ def make_mesh(length_z: float, length_v: float, length_mu: float,
     )
 
 
-@dataclasses.dataclass(frozen=True)
-class VlasovPoissonSolver:
+class VlasovPoissonSolver(eqx.Module):
     """
     Vlasov–Poisson Conservative semi-Lagrangian solver with operator splitting.
     """
