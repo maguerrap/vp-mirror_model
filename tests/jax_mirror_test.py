@@ -2,33 +2,7 @@ import pytest
 import jax
 import jax.numpy as jnp
 
-from vp_solver.jax_mirror_solver import VlasovPoissonSolver
-
-
-# ----------------------------
-# Minimal Mesh stub for testing (need at least nz > 5)
-# ----------------------------
-class Mesh:
-    def __init__(self, nz=10, nv=5, nmu=3):
-        self.nz  = nz
-        self.nv  = nv
-        self.nmu = nmu
-
-        # coordinates
-        self.zs  = jnp.linspace(-1.0, 1.0, nz)
-        self.vs  = jnp.linspace(-2.0, 2.0, nv)
-        self.mus = jnp.linspace(0.0, 1.0, nmu)
-
-        # 3D meshgrids
-        Z, V, MU = jnp.meshgrid(self.zs, self.vs, self.mus, indexing="ij")
-        self.Z  = Z
-        self.V  = V
-        self.MU = MU
-
-        # spacings
-        self.dz  = float(self.zs[1] - self.zs[0])
-        self.dv  = float(self.vs[1] - self.vs[0])
-        self.dmu = float(self.mus[1] - self.mus[0])
+from vp_solver.jax_mirror_solver import VlasovPoissonSolver, make_mesh
 
 
 # ----------------------------
@@ -36,7 +10,7 @@ class Mesh:
 # ----------------------------
 @pytest.fixture
 def solver():
-    mesh = Mesh(nz=10, nv=5, nmu=3)
+    mesh = make_mesh(length_z=1.0, length_v=2.0, length_mu=1.0, nz=10, nv=5, nmu=3)
     dt = 0.01
     return VlasovPoissonSolver(mesh, dt)
 
@@ -112,12 +86,12 @@ def test_one_step_forward(solver, f0):
     t_final = solver.dt
     num_steps = int(t_final/solver.dt)
 
-    f_array, f_total, E_total, ee, rho_arr = solver.run_forward_jax_scan(
+    f_final, f_array, E_total, ee, rho_arr = solver.run_forward_jax_scan(
         f0, B, dB, g, t_final
     )
 
-    assert f_array.shape == f0.shape   # scan output
-    assert f_total.shape == (num_steps, mesh.nz, mesh.nv, mesh.nmu)
+    assert f_final.shape == f0.shape
+    assert f_array.shape == (num_steps + 1,) + f0.shape
     assert E_total.shape == (num_steps, mesh.nz)
     assert ee.shape == (num_steps,)
-    assert rho_arr.shape == (num_steps, mesh.nz)
+    assert rho_arr.shape == (num_steps + 1, mesh.nz)
