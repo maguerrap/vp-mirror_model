@@ -3,12 +3,11 @@ from typing import Callable
 
 import jax
 import jax.numpy as jnp
+import equinox as eqx
 import interpax
 
 Array = jax.Array
 
-
-import equinox as eqx
 
 class Mesh(eqx.Module):
     """Mesh object updated to include cell edges for conservative finite volume advection."""
