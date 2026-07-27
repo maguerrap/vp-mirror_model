@@ -417,13 +417,13 @@ def plot_initial_distribution_multi(f_iv_e: Array, f_iv_i: Array,
     plt.show()
 
 
-def normalize_final_E_effect_multi(f_e_array: Array, f_e_array_no_E: Array,
-                                   f_i_array: Array, f_i_array_no_E: Array,
+def normalize_final_multi(f_e_array_1: Array, f_e_array_2: Array,
+                                   f_i_array_1: Array, f_i_array_2: Array,
                                    mesh: MeshFull) -> tuple:
 
 	all_data_il = jnp.concatenate([
-		f_i_array_no_E[:,:,0].ravel(),
-		f_i_array[:,:,0].ravel(),
+		f_i_array_1[:,:,0].ravel(),
+		f_i_array_2[:,:,0].ravel(),
 	])
 
 	vmin_il = all_data_il.min()
@@ -432,8 +432,8 @@ def normalize_final_E_effect_multi(f_e_array: Array, f_e_array_no_E: Array,
 	norm_il = matplotlib.colors.Normalize(vmin=vmin_il, vmax=vmax_il)
 
 	all_data_ic = jnp.concatenate([
-		f_i_array_no_E[:,:,int(mesh.nmu/16)].ravel(),
-		f_i_array[:,:,int(mesh.nmu/16)].ravel(),
+		f_i_array_1[:,:,int(mesh.nmu/16)].ravel(),
+		f_i_array_2[:,:,int(mesh.nmu/16)].ravel(),
 	])
 
 	vmin_ic = all_data_ic.min()
@@ -442,8 +442,8 @@ def normalize_final_E_effect_multi(f_e_array: Array, f_e_array_no_E: Array,
 	norm_ic = matplotlib.colors.Normalize(vmin=vmin_ic, vmax=vmax_ic)
 
 	all_data_ir = jnp.concatenate([
-		f_i_array_no_E[:,:,-1].ravel(),
-		f_i_array[:,:,-1].ravel(),
+		f_i_array_1[:,:,-1].ravel(),
+		f_i_array_2[:,:,-1].ravel(),
 	])
 
 	vmin_ir = all_data_ir.min()
@@ -452,8 +452,8 @@ def normalize_final_E_effect_multi(f_e_array: Array, f_e_array_no_E: Array,
 	norm_ir = matplotlib.colors.Normalize(vmin=vmin_ir, vmax=vmax_ir)
 
 	all_data_el = jnp.concatenate([
-		f_e_array_no_E[:,:,0].ravel(),
-		f_e_array[:,:,0].ravel(),
+		f_e_array_1[:,:,0].ravel(),
+		f_e_array_2[:,:,0].ravel(),
 	])
 
 	vmin_el = all_data_el.min()
@@ -462,8 +462,8 @@ def normalize_final_E_effect_multi(f_e_array: Array, f_e_array_no_E: Array,
 	norm_el = matplotlib.colors.Normalize(vmin=vmin_el, vmax=vmax_el)
 
 	all_data_ec = jnp.concatenate([
-		f_e_array_no_E[:,:,int(mesh.nmu/16)].ravel(),
-		f_e_array[:,:,int(mesh.nmu/16)].ravel(),
+		f_e_array_1[:,:,int(mesh.nmu/16)].ravel(),
+		f_e_array_2[:,:,int(mesh.nmu/16)].ravel(),
 	])
 
 	vmin_ec = all_data_ec.min()
@@ -472,8 +472,8 @@ def normalize_final_E_effect_multi(f_e_array: Array, f_e_array_no_E: Array,
 	norm_ec = matplotlib.colors.Normalize(vmin=vmin_ec, vmax=vmax_ec)
 
 	all_data_er = jnp.concatenate([
-		f_e_array_no_E[:,:,-1].ravel(),
-		f_e_array[:,:,-1].ravel(),
+		f_e_array_1[:,:,-1].ravel(),
+		f_e_array_2[:,:,-1].ravel(),
 	])
 
 	vmin_er = all_data_er.min()
@@ -485,10 +485,9 @@ def normalize_final_E_effect_multi(f_e_array: Array, f_e_array_no_E: Array,
 
 
 def plot_final_distribution_multi(f_e_array: Array, f_i_array: Array,
-									   norm_il, norm_ic, norm_ir, norm_el,
-									   norm_ec, norm_er,
-									   mesh: MeshFull) -> None:
-
+								  norm_il, norm_ic, norm_ir, norm_el,
+                                  norm_ec, norm_er,
+								  mesh: MeshFull) -> None:
 	fig, axs = plt.subplots(2,3 ,figsize=(28, 15))
 
 	im_el = axs[0,0].imshow(f_e_array[:,:,0].T, origin="lower",
@@ -579,7 +578,7 @@ def plot_energies_multi(t_values: Array, ee_array: Array, E_total_array: Array,
 	plt.show()
 
 
-def plot_rhos_multi(rho_e_array: Array,
+def plot_E_effect_rhos_multi(rho_e_array: Array,
 					rho_e_array_no_E: Array,
 					rho_i_array: Array,
 					rho_i_array_no_E: Array,
@@ -663,7 +662,72 @@ def plot_rhos_multi(rho_e_array: Array,
 	plt.show()
 
 
-def plot_int_rho_multi(rho_e_array: Array,
+def plot_rhos_multi(rho_e_array: Array, rho_i_array: Array,
+                    B_eval: Array, t_values: Array, mesh: MeshFull) -> None:
+    fig, axs = plt.subplots(2,2 ,figsize=(22, 15))
+
+    cmap = plt.get_cmap("tab10")
+
+    axs[0,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_e_array[0,:], color=cmap(0),
+                label='$\\rho({:.2f},z)$'.format(t_values[0]))
+    axs[0,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_e_array[10,:], color=cmap(1),
+                label='$\\rho({:.2f},z)$'.format(t_values[10]))
+    axs[0,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_e_array[100,:], color=cmap(2),
+                label='$\\rho({:.2f},z)$'.format(t_values[100]))
+    axs[0,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_e_array[250,:], color=cmap(3),
+                label='$\\rho({:.2f},z)$'.format(t_values[250]))
+    axs[0,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_e_array[-1,:], color=cmap(4),
+                label='$\\rho({:.2f},z)$'.format(t_values[-1]))
+    axs[0,0].set_title("$\\rho_e(t,z)$")
+    axs[0,0].set_xlabel("$z$", fontsize=20)
+    axs[0,0].legend()
+
+
+    axs[0,1].plot(mesh.zs, rho_e_array[0,:], color=cmap(0),
+                label='$\\rho({:.2f},z)$'.format(t_values[0]))
+    axs[0,1].plot(mesh.zs, rho_e_array[10,:], color=cmap(1),
+                label='$\\rho({:.2f},z)$'.format(t_values[10]))
+    axs[0,1].plot(mesh.zs, rho_e_array[100,:], color=cmap(2),
+                label='$\\rho({:.2f},z)$'.format(t_values[100]))
+    axs[0,1].plot(mesh.zs, rho_e_array[250,:], color=cmap(3),
+                label='$\\rho({:.2f},z)$'.format(t_values[250]))
+    axs[0,1].plot(mesh.zs, rho_e_array[-1,:], color=cmap(4),
+                label='$\\rho({:.2f},z)$'.format(t_values[-1]))
+    axs[0,1].set_title("$\\rho_e^{1D}(t,z)$")
+    axs[0,1].set_xlabel("$z$", fontsize=20)
+    axs[0,1].legend()
+
+    axs[1,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_i_array[0,:], color=cmap(0),
+                label='$\\rho({:.2f},z)$'.format(t_values[0]))
+    axs[1,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_i_array[10,:], color=cmap(1),
+                label='$\\rho({:.2f},z)$'.format(t_values[10]))
+    axs[1,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_i_array[100,:], color=cmap(2),
+                label='$\\rho({:.2f},z)$'.format(t_values[100]))
+    axs[1,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_i_array[250,:], color=cmap(3),
+                label='$\\rho({:.2f},z)$'.format(t_values[250]))
+    axs[1,0].plot(mesh.zs, 2*jnp.pi*B_eval*rho_i_array[-1,:], color=cmap(4),
+                label='$\\rho({:.2f},z)$'.format(t_values[-1]))
+    axs[1,0].set_title("$\\rho_i(t,z)$")
+    axs[1,0].set_xlabel("$z$", fontsize=20)
+    axs[1,0].legend()
+
+    axs[1,1].plot(mesh.zs, rho_i_array[0,:], color=cmap(0),
+                label='$\\rho({:.2f},z)$'.format(t_values[0]))
+    axs[1,1].plot(mesh.zs, rho_i_array[10,:], color=cmap(1),
+                label='$\\rho({:.2f},z)$'.format(t_values[10]))
+    axs[1,1].plot(mesh.zs, rho_i_array[100,:], color=cmap(2),
+                label='$\\rho({:.2f},z)$'.format(t_values[100]))
+    axs[1,1].plot(mesh.zs, rho_i_array[250,:], color=cmap(3),
+                label='$\\rho({:.2f},z)$'.format(t_values[250]))
+    axs[1,1].plot(mesh.zs, rho_i_array[-1,:], color=cmap(4),
+                label='$\\rho({:.2f},z)$'.format(t_values[-1]))
+    axs[1,1].set_title("$\\rho_i^{1D}(t,z)$")
+    axs[1,1].set_xlabel("$z$", fontsize=20)
+    axs[1,1].legend()
+
+    plt.show()
+
+def plot_E_effect_int_rho_multi(rho_e_array: Array,
 					rho_e_array_no_E: Array,
 					rho_i_array: Array,
 					rho_i_array_no_E: Array,
@@ -698,3 +762,118 @@ def plot_int_rho_multi(rho_e_array: Array,
 	axs[1].legend()
 
 	plt.show()
+
+def plot_int_rho_multi(rho_e_array_init: Array,
+                       rho_e_array_opt: Array,
+					   rho_i_array_init: Array,
+                       rho_i_array_opt: Array,
+					   prop_trapped: float,
+					   LZ: float,
+					   LV: float,
+					   m_i: float,
+					   ts: Array,
+					   mesh: MeshFull) -> None:
+
+	fig, axs = plt.subplots(1,2 ,figsize=(22, 7))
+
+	axs[0].plot(ts, vcost_rho(rho_e_array_init, mesh.zs), label='Initial $|\\mathbf{B}|$')
+	axs[0].plot(ts, vcost_rho(rho_e_array_opt, mesh.zs), label='Optimized $|\\mathbf{B}|$')
+	axs[0].set_title("$\\int \\rho_e^{1D}(t,z)\\mathrm{d}z$")
+	axs[0].set_xlabel("$t$", fontsize=20)
+	axs[0].hlines(y=prop_trapped, xmin=0, xmax=ts[-1], colors='k',
+				  linestyles='--', label='Trapped fraction')
+	axs[0].vlines(x=LZ/LV, ymin=0.94, ymax=1.0, colors='r',
+				  linestyles='--', label='Minimum time before leak')
+	axs[0].legend()
+
+
+	axs[1].plot(ts, vcost_rho(rho_i_array_init, mesh.zs), label='Initial $|\\mathbf{B}|$')
+	axs[1].plot(ts, vcost_rho(rho_i_array_opt, mesh.zs), label='Optimized $|\\mathbf{B}|$')
+	axs[1].set_title("$\\int \\rho_i^{1D}(t,z)\\mathrm{d}z$")
+	axs[1].set_xlabel("$t$", fontsize=20)
+	axs[1].hlines(y=prop_trapped, xmin=0, xmax=ts[-1], colors='k',
+				  linestyles='--', label='Trapped fraction')
+	axs[1].vlines(x=(LZ/LV)*jnp.sqrt(m_i), ymin=0.94, ymax=1.0, colors='r',
+				  linestyles='--', label='Minimum time before leak')
+	axs[1].legend()
+
+	plt.show()
+
+
+def plot_summray_opt_multi(B_eval_init: Array, B_eval_opt: Array, 
+                           t_values: Array, rho_e_array_init: Array,
+                           rho_e_array_opt: Array,
+                           rho_i_array_init: Array, 
+                           rho_i_array_opt: Array, E_array_init: Array,
+                           E_array_opt: Array, ee_array_init: Array,
+                           ee_array_opt: Array, m_i: float, mesh: MeshFull, LZ: float, 
+                           LV: float) -> None:
+    
+    fig, axs = plt.subplots(3,2 ,figsize=(22, 25))
+
+    cmap = plt.get_cmap("tab10")
+
+    axs[0,0].plot(mesh.zs, B_eval_init, color=cmap(0), label='$\\theta_0$', linestyle='--')
+    axs[0,0].plot(mesh.zs, B_eval_opt, color=cmap(0), label='$\\theta^{\\ast}$')
+    axs[0,0].set_xlabel('$z$', fontsize=20)
+    axs[0,0].set_title('$|\\mathbf{B}(z;\\theta)|$')
+    axs[0,0].legend()
+
+
+    axs[0,1].plot(t_values, vcost_rho(rho_e_array_init, mesh.zs), label='$s=e$ $\\theta_0$', color=cmap(0), linestyle='--')
+    axs[0,1].plot(t_values, vcost_rho(rho_e_array_opt, mesh.zs), label='$s=e$ $\\theta^{\\ast}$', color=cmap(0))
+    axs[0,1].plot(t_values, vcost_rho(rho_i_array_init, mesh.zs), label='$s=i$ $\\theta_0$', color=cmap(1), linestyle='--')
+    axs[0,1].plot(t_values, vcost_rho(rho_i_array_opt, mesh.zs), label='$s=i$ $\\theta^{\\ast}$', color=cmap(1))
+    axs[0,1].vlines(x=LZ/LV, ymin=jnp.min(vcost_rho(rho_i_array_init, mesh.zs)),
+                    ymax=1.0, colors='r', linestyles='--', label='Minimum time before leak (e)')
+    axs[0,1].vlines(x=(LZ/LV)*jnp.sqrt(m_i), ymin=jnp.min(vcost_rho(rho_i_array_init, mesh.zs)),
+                    ymax=1.0, colors='b', linestyles='--', label='Minimum time before leak (i)')
+    axs[0,1].set_xlabel('$t$', fontsize=20)
+    axs[0,1].set_title("$\\int \\rho_s^{1D}(t,z;\\theta)dz$")
+    axs[0,1].legend()
+
+
+    axs[1,0].plot(mesh.zs, E_array_init[10,:], linestyle='--')
+    axs[1,0].plot(mesh.zs, E_array_opt[10,:], label='$E({:.1f},z)$'.format(t_values[10]))
+    axs[1,0].plot(mesh.zs, E_array_init[100,:], linestyle='--')
+    axs[1,0].plot(mesh.zs, E_array_opt[100,:], label='$E({:.1f},z)$'.format(t_values[100]))
+    axs[1,0].plot(mesh.zs, E_array_init[400,:], linestyle='--')
+    axs[1,0].plot(mesh.zs, E_array_opt[400,:], label='$E({:.1f},z)$'.format(t_values[400]))
+    axs[1,0].plot(mesh.zs, E_array_init[650,:], linestyle='--')
+    axs[1,0].plot(mesh.zs, E_array_opt[650,:], label='$E({:.1f},z)$'.format(t_values[650]))
+    axs[1,0].set_title("$E(t,z)$")
+    axs[1,0].set_xlabel("$z$", fontsize=20)
+    axs[1,0].legend()
+
+    axs[1,1].plot(t_values[1:], ee_array_init, color=cmap(0), linestyle='--', label='$\\theta_0$')
+    axs[1,1].plot(t_values[1:], ee_array_opt, color=cmap(0), label='$\\theta^{\\ast}$')
+    axs[1,1].set_title("$\\mathcal{E}(t)$")
+    axs[1,1].set_xlabel("$t$", fontsize=20)
+    axs[1,1].legend()
+
+    axs[2,0].plot(mesh.zs, rho_e_array_opt[0,:], label='$\\rho_e({:.2f},z;\\theta^\\ast)$'.format(t_values[0]))
+    axs[2,0].plot(mesh.zs, rho_e_array_opt[50,:], label='$\\rho_e({:.2f},z;\\theta^\\ast)$'.format(t_values[50]), color=cmap(1))
+    axs[2,0].plot(mesh.zs, rho_e_array_opt[100,:], label='$\\rho_e({:.2f},z;\\theta^\\ast)$'.format(t_values[100]), color=cmap(2))
+    axs[2,0].plot(mesh.zs, rho_e_array_opt[-1,:], label='$\\rho_e({:.2f},z;\\theta^\\ast)$'.format(t_values[-1]), color=cmap(3))
+    axs[2,0].plot(mesh.zs, rho_e_array_init[0,:], label='$\\rho_e({:.2f},z;\\theta_0)$'.format(t_values[0]), linestyle='--')
+    axs[2,0].plot(mesh.zs, rho_e_array_init[50,:], label='$\\rho_e({:.2f},z;\\theta_0)$'.format(t_values[50]), color=cmap(1), linestyle='--')
+    axs[2,0].plot(mesh.zs, rho_e_array_init[100,:], label='$\\rho_e({:.2f},z;\\theta_0)$'.format(t_values[100]), color=cmap(2), linestyle='--')
+    axs[2,0].plot(mesh.zs, rho_e_array_init[-1,:], label='$\\rho_e({:.2f},z;\\theta_0)$'.format(t_values[-1]), color=cmap(3), linestyle='--')
+    axs[2,0].set_title("$\\rho_e^{1D}(t,z;\\theta)$")
+    axs[2,0].set_xlabel("$z$", fontsize=20)
+    axs[2,0].legend()
+
+    axs[2,1].plot(mesh.zs, rho_i_array_opt[0,:], label='$\\rho_i({:.2f},z;\\theta^\\ast)$'.format(t_values[0]))
+    axs[2,1].plot(mesh.zs, rho_i_array_opt[50,:], label='$\\rho_i({:.2f},z;\\theta^\\ast)$'.format(t_values[50]), color=cmap(1))
+    axs[2,1].plot(mesh.zs, rho_i_array_opt[100,:], label='$\\rho_i({:.2f},z;\\theta^\\ast)$'.format(t_values[100]), color=cmap(2))
+    axs[2,1].plot(mesh.zs, rho_i_array_opt[-1,:], label='$\\rho_i({:.2f},z;\\theta^\\ast)$'.format(t_values[-1]), color=cmap(3))
+    axs[2,1].plot(mesh.zs, rho_i_array_init[0,:], label='$\\rho_i({:.2f},z;\\theta_0)$'.format(t_values[0]), linestyle='--')
+    axs[2,1].plot(mesh.zs, rho_i_array_init[50,:], label='$\\rho_i({:.2f},z;\\theta_0)$'.format(t_values[50]), color=cmap(1), linestyle='--')
+    axs[2,1].plot(mesh.zs, rho_i_array_init[100,:], label='$\\rho_i({:.2f},z;\\theta_0)$'.format(t_values[100]), color=cmap(2), linestyle='--')
+    axs[2,1].plot(mesh.zs, rho_i_array_init[-1,:], label='$\\rho_i({:.2f},z;\\theta_0)$'.format(t_values[-1]), color=cmap(3), linestyle='--')
+    axs[2,1].set_title("$\\rho_i^{1D}(t,z;\\theta)$")
+    axs[2,1].set_xlabel("$z$", fontsize=20)
+    axs[2,1].legend()
+
+
+    plt.show()

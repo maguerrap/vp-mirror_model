@@ -103,17 +103,19 @@ def get_initial_distribution_multi(B_fn_grid: Callable, sigma_z: float,
 
     # Calculate Ion Maxwellian
     f_eq_i = jnp.exp(-0.5 * (m_i * mesh.V_i**2 + 2 * B_norm * mesh.MU))
-    C_z_i = 1.0 / (jnp.trapezoid(jnp.trapezoid(f_eq_i, x=mesh.mus, axis=2), x=mesh.vs_i, axis=1))
+    C_z_i = 1.0 / (jnp.trapezoid(jnp.trapezoid(f_eq_i, x=mesh.mus, axis=2),
+                                    x=mesh.vs_i, axis=1))
     f_iv_i = C_z_i[:, None, None] * f_eq_Z * f_eq_i
 
-    D_i = 1.0 / (jnp.trapezoid(jnp.trapezoid(jnp.trapezoid(f_iv_i, x=mesh.mus, axis=2), x=mesh.vs_i, axis=1), x=mesh.zs, axis=0))
+    D_i = 1.0 / (jnp.trapezoid(jnp.trapezoid(jnp.trapezoid(f_iv_i, x=mesh.mus,
+                                                            axis=2),
+                                             x=mesh.vs_i, axis=1),
+                                   x=mesh.zs, axis=0))
     f_iv_i = D_i * f_iv_i
 
     return f_iv_e, f_iv_i
 
 
-# Define the loss function
-# We use eqx.filter_value_and_grad so it only takes gradients wrt the arrays (weights/biases)
 @eqx.filter_value_and_grad
 def compute_loss_single(model: BFieldMLP, sigma_z:float,
                         solver: VlasovPoissonSolver, t_final: float,
@@ -134,7 +136,9 @@ def compute_loss_single(model: BFieldMLP, sigma_z:float,
 
     f_iv = get_initial_distribution_single(B_fn_grid, sigma_z, mesh)
 
-    f_arr, rho_last = solver.run_forward_jax_scan_efficient(f_iv, B_eval, dB_eval, g_eval, t_final)
+    f_arr, rho_last = solver.run_forward_jax_scan_efficient(f_iv, B_eval,
+                                                            dB_eval, g_eval,
+                                                            t_final)
 
     loss = jnp.trapezoid(rho_last, mesh.zs)
 
@@ -153,4 +157,45 @@ def step_single(model: BFieldMLP, opt_state: optax.OptState,
     updates, opt_state = optimizer.update(grads, opt_state, model)
     model = eqx.apply_updates(model, updates)
     
+    return model, opt_state, loss
+
+
+
+@eqx.filter_value_and_grad
+def compute_loss_multi(model: BFieldMLP, sigma_z:float,
+                       solver: VlasovPoissonSolverFull, t_final: float,
+                       m_i: float, mesh: MeshFull) -> float:
+    out_min, out_max = model.get_norm_bounds(mesh.zs)
+    
+    B_fn = lambda z: model.eval_point(z, out_min, out_max)
+    dB_fn = jax.grad(B_fn)
+    B_fn_grid = jnp.vectorize(B_fn)
+    dB_fn_grid = jnp.vectorize(dB_fn)
+
+    B_eval = B_fn_grid(mesh.zs)
+    dB_eval = dB_fn_grid(mesh.zs)
+    g_eval = dB_eval / B_eval
+
+    f_iv_e, f_iv_i = get_initial_distribution_multi(B_fn_grid, sigma_z, mesh, m_i)
+
+    (f_e_last, f_i_last) = solver.run_forward_jax_scan_efficient(
+                f_iv_e, f_iv_i, B_eval, dB_eval, g_eval, t_final, chunk_size=10
+            )
+
+    rho_e_final = solver.compute_rho_1d_e(f_e_last)
+    rho_i_final = solver.compute_rho_1d_i(f_i_last)
+
+    loss = cost_rho(rho_e_final, mesh.zs) + cost_rho(rho_i_final, mesh.zs)
+
+    return -1.0 * loss #Since we are maximizing
+
+# Optimization Step
+@eqx.filter_jit
+def step_multi(model: BFieldMLP, opt_state: optax.OptState, 
+               optimizer: optax.GradientTransformation,
+               sigma_z:float, solver: VlasovPoissonSolverFull, 
+               t_final: float, m_i: float, mesh: MeshFull):
+    loss, grads = compute_loss_multi(model, sigma_z, solver, t_final, m_i, mesh)
+    updates, opt_state = optimizer.update(grads, opt_state, model)
+    model = eqx.apply_updates(model, updates)
     return model, opt_state, loss
