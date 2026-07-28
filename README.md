@@ -1,43 +1,103 @@
-# Vlasov–Poisson Mirror Confinement Model (`vp-mirror_model`)
+# Vlasov–Poisson Mirror Solver
 
-`vp-mirror_model` is a GPU-accelerated, fully differentiable kinetic simulation and optimization framework written in **JAX** and **Equinox**[cite: 1, 2, 3]. It models 1D2V kinetic plasma dynamics in magnetic mirror geometries by solving the non-linear Vlasov–Poisson system with magnetic moment ($\mu$) force coupling[cite: 1, 3]:
+A solver for drift-kinetic plasma confinement using **magnetic mirrors** with a conservative semi-Lagrangian scheme, built with [JAX](https://github.com/google/jax) and [Equinox](https://github.com/patrick-kidger/equinox) for high-performance computing and automatic differentiation.
 
-$$\frac{\partial f_s}{\partial t} + v \frac{\partial f_s}{\partial z} + \frac{1}{m_s} \left( q_s E - \mu \frac{\partial B}{\partial z} \right) \frac{\partial f_s}{\partial v} = 0$$
-
-The solver leverages a **conservative semi-Lagrangian scheme** using monotonic PCHIP shape-preserving spline interpolations (via `interpax`) to guarantee exact mass preservation and wiggle-free distribution functions[cite: 1, 3].
+This project enables forward simulation of multi-species kinetic plasma dynamics and optimization over external magnetic field profiles $|\mathbf{B}(z)|$. These numerical experiments support the paper Kinetic Optimization of Magnetic Mirror Confinement: Beyond Classical Loss-Cone Theory.
 
 ---
 
-## Key Features
+## Mathematical Model
 
-* **High-Order Numerical Solvers:**
-  * **Single-species solver (`jax_mirror_solver.py`):** Fast kinetic kinetic transport for simplified single-species setups[cite: 2, 3].
-  * **Multi-species solver (`jax_mirror_solver_full.py`):** Fully coupled kinetic multi-species (electron & ion) solver with self-consistent Poisson field solve[cite: 1, 2].
-* **Neural Magnetic Field Optimization:**
-  * Neural network parametrization of $B(z)$ using Equinox MLPs[cite: 2].
-  * End-to-end automatic differentiation via JAX & Optax to discover optimal magnetic mirror shapes that maximize plasma particle retention[cite: 2].
-* **Mass-Conservative Transport:**
-  * 1D cumulative distribution function (CDF) mapping using `interpax.PchipInterpolator` prevents unphysical oscillations and numerical loss[cite: 1, 3].
-* **Flexible Execution Backends:**
-  * Memory-efficient JAX `lax.scan` time-stepping routines for single GPU execution[cite: 1, 3].
-  * Hybrid GPU-to-CPU stream processing for memory-limited hardware (`run_forward_hybrid`).
+We solve the **drift-kinetic Vlasov–Poisson system** in spatial dimension $z$ and velocity dimensions $(v, \mu)$ under an external magnetic field $|\mathbf{B}(z)|$:
+
+$$
+\begin{cases} \partial_{t} f_s + v\partial_{z} f_s + \left( \frac{q_s}{m_s}E(t,z) - \mu \partial_z \vert{}\mathbf{B}(z)\vert{} \right)\partial_{v} f_s = 0 , \\
+E(t,z) = -\partial_{z} \phi(t,z) ,\\ 
+-\partial_{zz}\phi + \partial_{z}\phi \frac{\partial_z \vert{}\mathbf{B}(z)\vert{}}{\vert{}\mathbf{B}(z)\vert{}} = 2\pi \vert{}\mathbf{B}(z)\vert{} \iint \left( f_i - f_e \right) \mathrm{d}v \mathrm{d}\mu .
+\end{cases}
+$$
+
+where:
+- $f_s(t, z, v, \mu)$ is the distribution function for plasma species $s \in \lbrace e, i\rbrace$ (electrons and ions),
+- $E(t, z)$ is the self-consistent electric field and $\phi(t, z)$ is the electric potential,
+- $|\mathbf{B}(z)|$ is the external magnetic field profile acting as a mirror control,
+- $q_s$ and $m_s$ are the charge and mass for species $s$,
+- $\mu$ is the magnetic moment (first adiabatic invariant),
+- $z \in [-L_z, L_z]$, $v \in [-L_v, L_v]$, and $\mu \in [0, \mu_{\max}]$.
 
 ---
 
-## Directory Structure
+## Features
+
+- ⚡ Conservative semi-Lagrangian solver with Strang operator splitting  
+- 🔁 Built with [JAX](https://github.com/google/jax) and [Equinox](https://github.com/patrick-kidger/equinox) for GPU/TPU acceleration and automatic differentiation  
+- 🧲 Pre-trained neural magnetic field profiles (`.eqx`) for single- and multi-species mirror regimes  
+- ⚡ Self-consistent Poisson solver adapted for non-uniform magnetic flux tube geometry  
+- 📊 Visualization utilities for kinetic phase space distributions, charge densities, and field dynamics  
+- 📓 Example Jupyter notebooks for reproducible experiments  
+
+---
+
+## Installation
+
+### Requirements
+- Python **3.12+**
+- [pip](https://pip.pypa.io/en/stable/) for package management  
+- NVIDIA GPU with recent drivers (recommended for JAX GPU execution)
+
+### CPU Version (default)
+To install the solver with CPU JAX:
+
+```bash
+pip install git+[https://github.com/maguerrap/vlasov-poisson-mirror.git@main](https://github.com/maguerrap/vlasov-poisson-mirror.git@main)
+```
+
+### GPU Version (recommended)
+For GPU acceleration, first install JAX with CUDA support by following the [JAX installation docs](https://docs.jax.dev/en/latest/installation.html).
+Then install the solver:
+
+```bash
+pip install git+[https://github.com/maguerrap/vlasov-poisson-mirror.git@main](https://github.com/maguerrap/vlasov-poisson-mirror.git@main)
+```
+
+## Usage
+
+```bash
+from vp_solver.jax_mirror_solver import Mesh, VlasovPoissonSolver # for single-species
+from vp_solver.jax_mirror_solver import MeshFull, VlasovPoissonSolverFull # for multi-species
+```
+
+### Examples & Pre-trained models
+
+We provide pre-trained neural network profiles and Jupyter demonstration notebooks in the `examples/` directory.
+
+#### Directory Structure
 
 ```text
-vp-mirror_model/
-├── vp_solver/                  # Core library modules
-│   ├── jax_mirror_solver.py       # Single-species mesh & Vlasov-Poisson solver
-│   ├── jax_mirror_solver_full.py  # Multi-species mesh & Vlasov-Poisson solver
-│   ├── utils_mirror.py            # Neural B-field MLP, distribution initializers, & loss functions
-│   └── utils_plots.py             # Plotting functions
-├── examples/                   # Demonstration and research notebooks
-│   ├── simulation_single.ipynb    # Single-species forward kinetic simulation
-│   ├── simulation_multi.ipynb     # Multi-species forward kinetic simulation
-│   ├── optimize_single.ipynb      # B-field optimization for single-species confinement
-│   └── optimize_multi.ipynb       # B-field optimization for multi-species confinement
-├── tests/                      # Pytest unit and integration test suite
-├── pyproject.toml              # Build & dependency management file
-└── README.md                   # Project documentation
+examples/
+├── trained_bfields/
+│   ├── bfield_single_species.eqx    # Pre-trained profile for single-species regime
+│   └── bfield_multi_species.eqx     # Pre-trained profile for multi-species regime
+├── VP_mirror_E_effect.ipynb         # Single-species E-field effect
+├── VP_mirror_opt.ipynb              # Single-species confinement optimization routine
+├── VP_mirror_E_effect_full.ipynb    # Multi-species E-field effect
+└── VP_mirror_opt_full.ipynb         # Multi-species confinement optimization routine
+```
+
+In these notebooks, we:
+
+- Run forward simulations of the Vlasov–Poisson system with and without the presence of an electric field $E(t,z)$.
+- Use [Optax](https://github.com/google-deepmind/optax/tree/main) to solve a PDE-constrained optimization problem:
+    - The goal is to design the magnetic profile  $|\mathbf{B}(z)|$ that maximizes plasma confinement.
+
+To run them, launch Jupyter:
+
+```bash
+jupyter notebook examples/
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](https://github.com/maguerrap/vp-mirror_model/blob/main/LICENSE).
