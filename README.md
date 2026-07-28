@@ -31,7 +31,8 @@ vp-mirror_model/
 ├── vp_solver/                  # Core library modules
 │   ├── jax_mirror_solver.py       # Single-species mesh & Vlasov-Poisson solver
 │   ├── jax_mirror_solver_full.py  # Multi-species mesh & Vlasov-Poisson solver
-│   └── utils_mirror.py            # Neural B-field MLP, distribution initializers, & loss functions
+│   ├── utils_mirror.py            # Neural B-field MLP, distribution initializers, & loss functions
+│   └── utils_plots.py             # Plotting functions
 ├── examples/                   # Demonstration and research notebooks
 │   ├── simulation_single.ipynb    # Single-species forward kinetic simulation
 │   ├── simulation_multi.ipynb     # Multi-species forward kinetic simulation
