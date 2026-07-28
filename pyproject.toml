@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vp-mirror-model"
+version = "0.1.0"
+description = "A GPU-accelerated conservative semi-Lagrangian Vlasov-Poisson solver and B-field neural optimizer for mirror plasma confinement."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+keywords = [
+    "plasma-physics",
+    "vlasov-poisson",
+    "jax",
+    "equinox",
+    "mirror-confinement",
+    "optax",
+    "semi-lagrangian"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "jax>=0.4.20",
+    "jaxlib>=0.4.20",
+    "equinox>=0.11.0",
+    "optax>=0.1.7",
+    "interpax>=0.3.0",
+    "numpy>=1.22.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "jupyter>=1.0.0",
+    "matplotlib>=3.5.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["vp_solver"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
