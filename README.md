@@ -69,8 +69,6 @@ from vp_solver.jax_mirror_solver import MeshFull, VlasovPoissonSolverFull # for 
 
 ### Examples & Pre-trained models
 
-![Vlasov–Poisson schematic](assets/final_density_multi.png)
-
 We provide pre-trained neural network profiles and Jupyter demonstration notebooks in the `examples/` directory.
 
 #### Directory Structure
