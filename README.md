@@ -49,7 +49,7 @@ where:
 To install the solver with CPU JAX:
 
 ```bash
-pip install git+[https://github.com/maguerrap/vp-mirror_model.git@main](https://github.com/maguerrap/vp-mirror_model.git@main)
+pip install git+https://github.com/maguerrap/vp-mirror_model.git@main
 ```
 
 ### GPU Version (recommended)
