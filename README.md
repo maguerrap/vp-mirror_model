@@ -57,7 +57,7 @@ For GPU acceleration, first install JAX with CUDA support by following the [JAX 
 Then install the solver:
 
 ```bash
-pip install git+[https://github.com/maguerrap/vlasov-poisson-mirror.git@main](https://github.com/maguerrap/vlasov-poisson-mirror.git@main)
+pip install git+[https://github.com/maguerrap/vp-mirror_model.git@main](https://github.com/maguerrap/vp-mirror_model.git@main)
 ```
 
 ## Usage
