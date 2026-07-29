@@ -92,6 +92,38 @@ To run them, launch Jupyter:
 jupyter notebook examples/
 ```
 
+Or if Google Colab is preferred one can access them below:
+
+#### 1. Electric Field Effect Study for Single-species
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/maguerrap/vlasov-poisson-mirror/blob/main/examples/VP_mirror_E_effect.ipynb)
+
+* **File:** `examples/VP_mirror_E_effect.ipynb`
+* **Focus:** Understand self-consistent electric fields $E(t,z)$ in a single-species regime ($s=e$).
+
+---
+
+#### 2. Electric Field Effect Study for Multi-species
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/maguerrap/vlasov-poisson-mirror/blob/main/examples/VP_mirror_E_effect_full.ipynb)
+
+* **File:** `examples/VP_mirror_E_effect_full.ipynb`
+* **Focus:** Understand self-consistent electric fields $E(t,z)$ in a multi-species regime ($s=e, i$).
+
+---
+
+#### 3. Magnetic Field Control & Optimization for Single-species
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/maguerrap/vlasov-poisson-mirror/blob/main/examples/VP_mirror_opt.ipynb)
+
+* **File:** `examples/VP_mirror_opt.ipynb`
+* **Focus:** Uses Optax and Equinox to perform PDE-constrained optimization over neural magnetic field profiles for single-species regime ($s=e$).
+
+---
+
+#### 4. Magnetic Field Control & Optimization for Multi-species
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/maguerrap/vlasov-poisson-mirror/blob/main/examples/VP_mirror_opt_full.ipynb)
+
+* **File:** `examples/VP_mirror_opt_full.ipynb`
+* **Focus:** Uses Optax and Equinox to perform PDE-constrained optimization over neural magnetic field profiles for multi-species regime ($s=e, i$).
+
 ---
 
 ## License
