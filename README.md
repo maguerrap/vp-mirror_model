@@ -2,7 +2,7 @@
 
 A solver for drift-kinetic plasma confinement using **magnetic mirrors** with a conservative semi-Lagrangian scheme, built with [JAX](https://github.com/google/jax) and [Equinox](https://github.com/patrick-kidger/equinox) for high-performance computing and automatic differentiation.
 
-This project enables forward simulation of multi-species kinetic plasma dynamics and optimization over external magnetic field profiles $|\mathbf{B}(z)|$. These numerical experiments support the paper Kinetic Optimization of Magnetic Mirror Confinement: Beyond Classical Loss-Cone Theory.
+This project enables forward simulation of multi-species kinetic plasma dynamics and optimization over external magnetic field profiles $|\mathbf{B}(z)|$. These numerical experiments support the paper [Kinetic Optimization of Magnetic Mirror Confinement: Beyond Classical Loss-Cone Theory](https://arxiv.org/abs/2607.26479).
 
 ---
 
