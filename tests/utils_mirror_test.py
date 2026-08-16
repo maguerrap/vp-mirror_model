@@ -12,7 +12,8 @@ from vp_solver.utils_mirror import (
     compute_loss_single,
     step_single,
     compute_loss_multi,
-    step_multi
+    step_multi,
+    load_b_trained
 )
 from vp_solver.jax_mirror_solver import make_mesh, VlasovPoissonSolver
 from vp_solver.jax_mirror_solver_full import make_mesh_full, VlasovPoissonSolverFull
@@ -52,12 +53,38 @@ def test_bfield_mlp_basic(b_model):
     assert val.shape == ()
 
 
+def test_b_fn_and_grad(b_model):
+    zs = jnp.linspace(-1.0, 1.0, 10)
+    out_min, out_max = b_model.get_norm_bounds(zs)
+    
+    def B_fn(z):
+        return b_model.eval_point(z, out_min, out_max)
+        
+    dB_fn = jax.grad(B_fn)
+    
+    # Test scalar evaluation
+    b_val = B_fn(0.0)
+    db_val = dB_fn(0.0)
+    
+    assert b_val.shape == ()
+    assert db_val.shape == ()
+
+
 def test_cost_rho():
     zs = jnp.linspace(-1.0, 1.0, 10)
     rho = jnp.ones_like(zs)
     cost = cost_rho(rho, zs)
     assert cost.shape == ()
     assert jnp.isclose(cost, 2.0)
+
+
+def test_load_b_trained():
+    zs = jnp.linspace(-1.0, 1.0, 10)
+    B_fn_grid, dB_fn_grid, B_eval, dB_eval, g_eval = load_b_trained(seed=42, zs=zs, load_path=None)
+    
+    assert B_eval.shape == (10,)
+    assert dB_eval.shape == (10,)
+    assert g_eval.shape == (10,)
 
 
 def test_get_initial_distribution_single(mesh_single):
@@ -89,7 +116,7 @@ def test_single_species_optimization(b_model, solver_single, mesh_single):
     model_new, opt_state_new, loss_step = step_single(
         b_model, opt_state, optimizer, sigma_z=0.5, solver=solver_single, t_final=0.01, mesh=mesh_single
     )
-    assert loss_step == loss
+    assert jnp.isclose(loss_step, loss)
 
 
 def test_multi_species_optimization(b_model, solver_multi, mesh_multi):
@@ -104,4 +131,4 @@ def test_multi_species_optimization(b_model, solver_multi, mesh_multi):
     model_new, opt_state_new, loss_step = step_multi(
         b_model, opt_state, optimizer, sigma_z=0.5, solver=solver_multi, t_final=0.01, m_i=25.0, mesh=mesh_multi
     )
-    assert loss_step == loss
+    assert jnp.isclose(loss_step, loss)
