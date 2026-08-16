@@ -1,8 +1,8 @@
 # Vlasov–Poisson Mirror Solver
 
-[![Run Tests](https://github.com/maguerrap/vlasov-poisson-mirror/actions/workflows/run_test.yml/badge.svg)](https://github.com/maguerrap/vp-mirror_model/actions/workflows/run_test.yml)
-[![codecov](https://codecov.io/gh/maguerrap/vlasov-poisson-mirror/graph/badge.svg)](https://codecov.io/gh/maguerrap/vp-mirror_model)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/maguerrap/vp-mirror_model/blob/main/LICENSE)
+[![Run Tests](https://github.com/maguerrap/vp-mirror_model/actions/workflows/run_test.yml/badge.svg)](https://github.com/maguerrap/vp-mirror_model/actions/workflows/run_test.yml)
+[![codecov](https://codecov.io/gh/maguerrap/vp-mirror_model/graph/badge.svg)](https://codecov.io/gh/maguerrap/vp-mirror_model)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/maguerrap/vp-mirror_model/blob/main/LICENSE)
 
 A solver for drift-kinetic plasma confinement using **magnetic mirrors** with a conservative semi-Lagrangian scheme, built with [JAX](https://github.com/google/jax) and [Equinox](https://github.com/patrick-kidger/equinox) for high-performance computing and automatic differentiation.
 
