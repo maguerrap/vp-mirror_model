@@ -118,3 +118,66 @@ def test_one_step_forward(solver, f0_e, f0_i):
     assert ee_array.shape == (num_steps,)
     assert rho_e_array.shape == (num_steps + 1, mesh.nz)
     assert rho_i_array.shape == (num_steps + 1, mesh.nz)
+
+
+def test_run_forward_jax_scan_no_E(solver, f0_e, f0_i):
+    mesh = solver.mesh
+
+    B = jnp.ones(mesh.nz)
+    dB = jnp.zeros(mesh.nz)
+    g  = jnp.ones(mesh.nz)
+
+    t_final = solver.dt
+    num_steps = int(t_final/solver.dt)
+
+    (f_e_final, f_i_final), rho_e_array, rho_i_array = solver.run_forward_jax_scan_no_E(
+        f0_e, f0_i, B, dB, g, t_final
+    )
+
+    assert f_e_final.shape == f0_e.shape
+    assert f_i_final.shape == f0_i.shape
+    assert rho_e_array.shape == (num_steps + 1, mesh.nz)
+    assert rho_i_array.shape == (num_steps + 1, mesh.nz)
+
+
+def test_run_forward_jax_scan_efficient(solver, f0_e, f0_i):
+    mesh = solver.mesh
+
+    B = jnp.ones(mesh.nz)
+    dB = jnp.zeros(mesh.nz)
+    g  = jnp.ones(mesh.nz)
+
+    t_final = solver.dt
+
+    f_e_final, f_i_final = solver.run_forward_jax_scan_efficient(
+        f0_e, f0_i, B, dB, g, t_final, chunk_size=1
+    )
+
+    assert f_e_final.shape == f0_e.shape
+    assert f_i_final.shape == f0_i.shape
+
+
+def test_run_forward_hybrid(solver, f0_e, f0_i):
+    mesh = solver.mesh
+
+    B = jnp.ones(mesh.nz)
+    dB = jnp.zeros(mesh.nz)
+    g  = jnp.ones(mesh.nz)
+
+    t_final = solver.dt
+    num_steps = int(t_final/solver.dt)
+
+    carry, f_e_array, f_i_array, E_total_array, ee_array, rho_e_array, rho_i_array = solver.run_forward_hybrid(
+        f0_e, f0_i, B, dB, g, t_final, chunk_size=1
+    )
+
+    f_e_final, f_i_final = carry
+
+    assert f_e_final.shape == f0_e.shape
+    assert f_i_final.shape == f0_i.shape
+    assert f_e_array.shape == (num_steps + 1,) + f0_e.shape
+    assert f_i_array.shape == (num_steps + 1,) + f0_i.shape
+    assert E_total_array.shape == (num_steps, mesh.nz)
+    assert ee_array.shape == (num_steps,)
+    assert rho_e_array.shape == (num_steps + 1, mesh.nz)
+    assert rho_i_array.shape == (num_steps + 1, mesh.nz)

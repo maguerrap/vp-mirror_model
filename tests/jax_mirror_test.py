@@ -95,3 +95,38 @@ def test_one_step_forward(solver, f0):
     assert E_total.shape == (num_steps, mesh.nz)
     assert ee.shape == (num_steps,)
     assert rho_arr.shape == (num_steps + 1, mesh.nz)
+
+
+def test_run_forward_jax_scan_no_E(solver, f0):
+    mesh = solver.mesh
+
+    B = jnp.ones(mesh.nz)
+    dB = jnp.zeros(mesh.nz)
+    g  = jnp.ones(mesh.nz)
+
+    t_final = solver.dt
+    num_steps = int(t_final/solver.dt)
+
+    f_final, rho_arr = solver.run_forward_jax_scan_no_E(
+        f0, B, dB, g, t_final
+    )
+
+    assert f_final.shape == f0.shape
+    assert rho_arr.shape == (num_steps + 1, mesh.nz)
+
+
+def test_run_forward_jax_scan_efficient(solver, f0):
+    mesh = solver.mesh
+
+    B = jnp.ones(mesh.nz)
+    dB = jnp.zeros(mesh.nz)
+    g  = jnp.ones(mesh.nz)
+
+    t_final = solver.dt
+
+    f_final, rho_final = solver.run_forward_jax_scan_efficient(
+        f0, B, dB, g, t_final, chunk_size=1
+    )
+
+    assert f_final.shape == f0.shape
+    assert rho_final.shape == (mesh.nz,)
