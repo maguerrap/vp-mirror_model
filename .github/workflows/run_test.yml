@@ -1,4 +1,4 @@
-name: Run Tests & Coverage
+name: CI Pipeline
 
 on:
   push:
@@ -7,7 +7,33 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
+  # --------------------------------------------------
+  # STAGE 1: BUILD
+  # Verifies that package dependencies and wheel build cleanly
+  # --------------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install build tool & verify package build
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+  # --------------------------------------------------
+  # STAGE 2: TEST MATRIX
+  # Runs tests in parallel across Python versions AFTER build passes
+  # --------------------------------------------------
   test:
+    needs: build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -24,17 +50,39 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install package and dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov
-          pip install -e .
+          pip install -e .[dev]
 
-      - name: Run tests with pytest and collect coverage
+      - name: Run pytest
         run: |
           pytest --cov-report=xml
 
-      - name: Upload coverage reports to Codecov
+      - name: Save coverage artifact
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  # --------------------------------------------------
+  # STAGE 3: DEPLOY COVERAGE
+  # Uploads reports to Codecov AFTER all test matrix instances pass
+  # --------------------------------------------------
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
