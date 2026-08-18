@@ -1,6 +1,6 @@
 # Vlasov–Poisson Mirror Solver
 
-[![Run Tests](https://github.com/maguerrap/vp-mirror_model/actions/workflows/run_test.yml/badge.svg)](https://github.com/maguerrap/vp-mirror_model/actions/workflows/run_test.yml)
+[![Run Tests](https://github.com/maguerrap/vp-mirror_model/actions/workflows/run_tests.yml/badge.svg)](https://github.com/maguerrap/vp-mirror_model/actions/workflows/run_tests.yml)
 [![codecov](https://codecov.io/gh/maguerrap/vp-mirror_model/graph/badge.svg)](https://codecov.io/gh/maguerrap/vp-mirror_model)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/maguerrap/vp-mirror_model/blob/main/LICENSE)
 
